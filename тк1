@@ -1,0 +1,75 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
+
+def estimate_probabilistic_characteristics(data, method='histogram'):
+  """
+  Функция для автоматического оценивания вероятностных характеристик случайных процессов.
+
+  Args:
+    data: Массив данных, представляющий собой выборку из случайного процесса.
+    method: Метод оценки (по умолчанию 'histogram').
+            Доступные методы: 'histogram', 'kernel_density'
+
+  Returns:
+    Словарь, содержащий оцененные вероятностные характеристики:
+      - mean: Математическое ожидание.
+      - variance: Дисперсия.
+      - std: Стандартное отклонение.
+      - pdf: Плотность вероятности (только для методов 'histogram' и 'kernel_density').
+      - cdf: Кумулятивная функция распределения (только для методов 'histogram' и 'kernel_density').
+  """
+
+  probabilistic_characteristics = {}
+
+  # Математическое ожидание
+  probabilistic_characteristics['mean'] = np.mean(data)
+
+  # Дисперсия
+  probabilistic_characteristics['variance'] = np.var(data)
+
+  # Стандартное отклонение
+  probabilistic_characteristics['std'] = np.std(data)
+
+  if method == 'histogram':
+    # Гистограмма
+    hist, bin_edges = np.histogram(data, bins='auto', density=True)
+    probabilistic_characteristics['pdf'] = hist
+    probabilistic_characteristics['cdf'] = np.cumsum(hist)
+
+  elif method == 'kernel_density':
+    # Оценка плотности ядра
+    kde = gaussian_kde(data)
+    probabilistic_characteristics['pdf'] = kde.evaluate(np.linspace(np.min(data), np.max(data), 100))
+    probabilistic_characteristics['cdf'] = kde.integrate_box_1d(np.min(data), np.linspace(np.min(data), np.max(data), 100))
+
+  else:
+    raise ValueError("Неверный метод оценки.")
+
+  return probabilistic_characteristics
+
+# Пример использования
+data = np.random.normal(loc=0, scale=1, size=1000)  # Генерация случайных данных из нормального распределения
+probabilistic_characteristics = estimate_probabilistic_characteristics(data, method='histogram')
+print(probabilistic_characteristics)
+
+# Визуализация результатов
+plt.figure(figsize=(10, 6))
+
+# Гистограмма
+plt.subplot(2, 1, 1)
+plt.hist(data, bins='auto', density=True)
+plt.title('Гистограмма')
+plt.xlabel('Значение')
+plt.ylabel('Плотность вероятности')
+
+# Кривая плотности
+plt.subplot(2, 1, 2)
+x_range = np.linspace(np.min(data), np.max(data), 100)
+plt.plot(x_range, probabilistic_characteristics['pdf'])
+plt.title('Плотность вероятности')
+plt.xlabel('Значение')
+plt.ylabel('Плотность вероятности')
+
+plt.tight_layout()
+plt.show()
